@@ -22,8 +22,8 @@ const peers = {}
 navigator.mediaDevices.getUserMedia({
   video: true,
   audio: true
-}).then(async(stream) => {
-  await addVideoStream(myVideo, stream, '111111111 async')  
+}).then((stream) => {
+  addVideoStream(myVideo, stream, '111111111 async')  
   
   console.log('myPeer: ', myPeer)
 
@@ -129,18 +129,12 @@ function logit(msg) {
   logging.append(stuff)
 }
 
-async function addVideoStream(video, stream, dbg) {
-    return new Promise((resolve, reject) => {
-        //   console.log('addVideoStream: video: ', video)   // the <video> tag
-        //   console.log('addVideoStream: stream: ', stream) // MediaStream object
-        video.srcObject = stream
-        video.addEventListener('loadedmetadata', () => {
-          logit('addVideoStream  play '+dbg)
-          video.play()
-        })
-        videoGrid.append(video)
-        logit('addVideoStream  resolve() '+dbg)
-        resolve()
+function addVideoStream(video, stream, dbg) {
+    video.srcObject = stream
+    video.addEventListener('loadedmetadata', () => {
+      logit('addVideoStream  play '+dbg)
+      video.play()
     })
-  
+    videoGrid.append(video)
+    logit('addVideoStream  resolve() '+dbg)  
 }
