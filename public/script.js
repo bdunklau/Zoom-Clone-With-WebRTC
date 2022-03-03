@@ -78,7 +78,7 @@ navigator.mediaDevices.getUserMedia({
 socket.on('user-disconnected', userId => {
   logit('user-disconnected: remote userId = '+userId)
   logit('user-disconnected: peers[userId] = '+peers[userId])
-  if (peers[userId]) peers[userId].close() // WHY UNDEFINED !!!!!!!!!!
+  if (peers[userId]) peers[userId].close() 
 })
 
 myPeer.on('open', id => {
