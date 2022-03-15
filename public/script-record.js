@@ -170,7 +170,8 @@ function initRecordButton() {
         });
       
       
-        recorder.startRecording()
+        recorder.startRecording()  //  RecordRTC:51
+        
         /**
         close - check out ==>  https://github.com/guest271314/MediaFragmentRecorder/blob/getdisplaymedia-webaudio/MediaFragmentRecorder.html#L81
         **/
@@ -202,8 +203,11 @@ function initStopButton() {
         if(!recorder) return        
         recorder.stopRecording(function(url, type) {
             console.log('stop recording:  type=',type,'  url=',url)
-            const vid = document.querySelector("video")
+//             const vid = document.querySelector("video")            
+            const vid = createVideoElement()   
             vid.src = url;
+            const container = document.getElementById('video-playback')
+            container.append(vid)
         });
     })
 }
