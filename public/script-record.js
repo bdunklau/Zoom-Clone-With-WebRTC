@@ -13,19 +13,21 @@ const myPeer = new Peer(undefined, {
   port: '443'
 })
 
-var recorder = new MRecordRTC();
-
+var myId
 const myVideo = createVideoElement()
 myVideo.muted = true
 
 const peers = {}
+const streamProps = {}
 navigator.mediaDevices.getUserMedia({
   video: true,
   audio: true
 }).then((stream) => {
   console.log('myStream: ', stream)
   
-  addVideoStream(myVideo, stream, '111111111 async')    
+  addVideoStream(myVideo, stream, {local: true}, '111111111 async') 
+  
+//   logit2('CHECK HERE: w='+stream.width+'  h='+stream.height)
   
   console.log('myPeer: ', myPeer)
 
@@ -37,11 +39,18 @@ navigator.mediaDevices.getUserMedia({
   below: socket.emit("ready")  causes server.js to broadcast : user-connected
   below: !! in other peers !!  socket.on:user-connected calls connectToNewUser() 
   connectToNewUser() !! in other peers !! calls  myPeer.call(remoteUserId, ourStream)
+  
+  THE 2ND PERSON TO JOIN HAS THIS EXECUTED - THE FIRST PERSON TO JOIN DOES NOT
+     compare this with  connectToNewUser() below
   ***/
   myPeer.on('call', call => {    
     const video = createVideoElement()
     
-    call.answer(stream)   //  ... so I answer
+    stream.name = 'brentstream'
+    logit2('myPeer.on(call): stream.id='+stream.id)
+    logit2('myPeer.on(call): stream.width='+stream.width)
+    logit2('myPeer.on(call): stream.name='+stream.name)
+    call.answer(stream, {mymeta: {foo: 'bar'}})   //  ... so I answer  Where does this stream go?
     logit('call.answer():  ok')
     
     call.on('stream', userVideoStream => {
@@ -49,7 +58,7 @@ navigator.mediaDevices.getUserMedia({
       YOU ONLY GET THIS WHEN YOU REFRESH FROM PC, NOT FROM IPHONE
       **/
       logit('myPeer.on(call, call => {})  STREAM EVENT - THIS IS WHAT WE WANT TO SEE')
-      addVideoStream(video, userVideoStream, '2222222')
+      addVideoStream(video, userVideoStream, {local: false}, '2222222')
     })
   
     logit('myPeer.on(call, call => {}) : listening for "close"')
@@ -70,10 +79,16 @@ navigator.mediaDevices.getUserMedia({
     //setTimeout(connectToNewUser,5000,userId,stream)
   })
   
+//   socket.on('dimensions-broadcast', args => {
+//       const strm = streamProps[args.streamId]
+//       strm.width = args.width
+//       strm.height = args.height
+//   })
+  
   initRecordButton()
   initStopButton()
   
-  socket.emit("ready")  //  https://stackoverflow.com/questions/66937384/peer-oncalll-is-never-being-called
+  socket.emit("ready", ROOM_ID, myId)  //  https://stackoverflow.com/questions/66937384/peer-oncalll-is-never-being-called
   
 })
 // .catch(error => {    
@@ -87,26 +102,28 @@ socket.on('user-disconnected', userId => {
 })
 
 myPeer.on('open', id => {
+  myId = id
   logit('myPeer.on("open", id)  id = '+id)
   //   console.log('myPeer.on("open", id)  id = '+id)
   socket.emit('join-room', ROOM_ID, id)
 })
 
 // when a remote user connects
+// How does this get called?  It gets called from  socket.on('user-connected'...)  in this file
+// 
+// THE FIRST PERSON TO JOIN HAS THIS CALLED ON HIS MACHINE - THE 2ND PERSON TO JOIN DOESN'T SEE THIS GET CALLED ON HIS MACHINE
+//   compare this with myPeer.on('call'...)  above
 function connectToNewUser(remoteUserId, ourStream) {
   const call = myPeer.call(remoteUserId, ourStream)
-  console.log('connectToNewUser: ourStream = ', ourStream)
-  console.log('connectToNewUser: myPeer.call(remoteUserId, ourStream) => call.peer => ', call.peer)
-  logit('connectToNewUser: myPeer.call(remoteUserId, ourStream) where remoteUserId='+remoteUserId)
-  logit('connectToNewUser: myPeer.call(remoteUserId, ourStream) => call.peer => '+ call.peer)
-  
+  console.log('METADATA:  call = ', call)
   const video = createVideoElement()
   call.on('stream', userVideoStream => {
-    console.log('connectToNewUser: STREAM NEW REMOTE USER userVideoStream = ', userVideoStream)
-    console.log('connectToNewUser: STREAM NEW REMOTE USER userVideoStream.getAudioTracks() = ', userVideoStream.getAudioTracks())
-    console.log('connectToNewUser: STREAM NEW REMOTE USER userVideoStream.getVideoTracks() = ', userVideoStream.getVideoTracks())
-    logit('connectToNewUser: STREAM NEW REMOTE USER')
-    addVideoStream(video, userVideoStream, '3333333')
+    logit2('connectToNewUser: STREAM NEW REMOTE USER')
+    console.log('connectToNewUser: userVideoStream = ', userVideoStream)
+    logit2('connectToNewUser: userVideoStream.id='+userVideoStream.id)
+    logit2('connectToNewUser: userVideoStream.name='+userVideoStream.name)
+    logit2('connectToNewUser: userVideoStream w='+userVideoStream.width+'  h='+userVideoStream.height) // UNDEFINED - WHY ?????????
+    addVideoStream(video, userVideoStream, {local: false}, '3333333')
   })
   
   logit('connectToNewUser: listening for "close"')
@@ -144,12 +161,12 @@ function initRecordButton() {
       
 
         recorder = RecordRTC(streams, {
-            type: 'video',
-            mimeType: 'video/webm',
-            previewStream: function(s) {
-                video.muted = true;
-                video.srcObject = s;
-            }
+            type: 'video'
+            , mimeType: 'video/webm'
+//             , previewStream: function(s) {
+//                 video.muted = true;
+//                 video.srcObject = s;
+//             }
         });
       
       
@@ -201,26 +218,39 @@ function logit2(msg) {
   logging.append(stuff)
 }
 
-function addVideoStream(video, stream, dbg) {
-    logit2('addVideoStream:  '+dbg)
+/**
+if  evn.local = true   then we need to socket emit
+**/
+function addVideoStream(video, stream, env, dbg) {
     video.srcObject = stream
   
     video.addEventListener('loadedmetadata', () => {
-        logit('addVideoStream  play '+dbg)
+        //  video.videoWidth and video.videoHeight are only only available here and not before
         video.play()
+      
+        var w = video.videoWidth
+        var h = video.videoHeight
+        logit2('addVideoStream: before '+dbg+'  window.orientation='+window.orientation)
+        logit2('addVideoStream: before '+dbg+'  stream.width='+w+'  stream.height='+h)   //  addVideoStream: before 3333333 stream.width=320 stream.height=240
+      
+        if(window.orientation == 0/*portrait*/ && (h < w)) {
+            // then flip the dims
+            h = video.videoWidth
+            w = video.videoHeight
+        }
+      
+        if(!streamProps[stream.id]) {
+            stream.width = w
+            stream.height = h
+            streamProps[stream.id] = stream // streamProps should be name-changed to something else.  It doesn't hold props
+            logit2('addVideoStream: after '+dbg+'  stream.width='+w+'  stream.height='+h) 
+            streams.push(stream)
+        }
+
+        if(videoGrid) videoGrid.append(video)
+        else console.log('REMEMBER =========== video-grid tag was renamed to video-gridx so it wont show up/interfere')
     })
-    
-    console.log('addVideoStream:  stream.getVideoTracks()[0].getSettings().height = ', stream.getVideoTracks()[0].getSettings().height)
-    console.log('addVideoStream:  stream.getVideoTracks()[0].getSettings().width = ', stream.getVideoTracks()[0].getSettings().width)
-    logit2('addVideoStream: height = '+ stream.getVideoTracks()[0].getSettings().height)
-    logit2('addVideoStream: width = '+ stream.getVideoTracks()[0].getSettings().width)
-    logit2('addVideoStream: window.orientation = '+ window.orientation)
-    streams.push(stream)
-  
-    if(videoGrid) videoGrid.append(video)
-    else console.log('REMEMBER =========== video-grid tag was renamed to video-gridx so it wont show up/interfere')
-  
-    logit('addVideoStream  resolve() '+dbg)  
+
 }
 
 

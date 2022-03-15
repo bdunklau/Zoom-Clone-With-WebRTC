@@ -4955,12 +4955,15 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     var isStopDrawingFrames = false;
 
     var canvas = document.createElement('canvas');
+    console.log('MultiStreamsMixer: created canvas element')
     var context = canvas.getContext('2d');
     canvas.style.opacity = 0;
     canvas.style.position = 'absolute';
     canvas.style.zIndex = -1;
     canvas.style.top = '-1000em';
     canvas.style.left = '-1000em';
+    canvas.style.display = 'none'
+    canvas.width = 1
     canvas.className = elementClass;
     (document.body || document.documentElement).appendChild(canvas);
 
@@ -5073,98 +5076,127 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             }
         });
 
+//         console.log('CHECKING... canvas.width = ', canvas.width)
         if (fullcanvas) {
             canvas.width = fullcanvas.stream.width;
             canvas.height = fullcanvas.stream.height;
         } else if (remaining.length) {
-            canvas.width = videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
+            if(canvas.width === 1) {
+                //  canvas created at 4957
+                //canvas.width = videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
+                if(videosLength === 1) {
+                  canvas.width = remaining[0].width
+                  canvas.height = remaining[0].height
+                }
+                else if(videosLength === 2) {
+                  canvas.width = remaining[0].width + remaining[1].width
+                  canvas.height = Math.min(remaining[0].height, remaining[1].height)
+                }
+                else if(videosLength === 3) canvas.width = remaining[0].width + remaining[1].width + remaining[2].width
+                else if(videosLength === 4) canvas.width = remaining[0].width + remaining[1].width + remaining[2].width + remaining[3].width
 
-            var height = 1;
-            if (videosLength === 3 || videosLength === 4) {
-                height = 2;
-            }
-            if (videosLength === 5 || videosLength === 6) {
-                height = 3;
-            }
-            if (videosLength === 7 || videosLength === 8) {
-                height = 4;
-            }
-            if (videosLength === 9 || videosLength === 10) {
-                height = 5;
-            }
-            canvas.height = remaining[0].height * height;
-        } else {
-            canvas.width = self.width || 360;
-            canvas.height = self.height || 240;
-        }
+//                 var height = 1;
+//                 if (videosLength === 3 || videosLength === 4) {
+//                     height = 2;
+//                 }
+//                 if (videosLength === 5 || videosLength === 6) {
+//                     height = 3;
+//                 }
+//                 if (videosLength === 7 || videosLength === 8) {
+//                     height = 4;
+//                 }
+//                 if (videosLength === 9 || videosLength === 10) {
+//                     height = 5;
+//                 }
+//                 canvas.height = remaining[0].height * height;
+                console.log('JUST SET canvas.width = ', canvas.width)                
+            } 
+//             else {
+//                 console.log('ALREADY SET canvas.width = ', canvas.width)                 
+//             }
+        } 
+//         else {
+//             canvas.width = self.width || 360;
+//             canvas.height = self.height || 240;
+//         }
 
         if (fullcanvas && fullcanvas instanceof HTMLVideoElement) {
             drawImage(fullcanvas);
         }
 
         remaining.forEach(function(video, idx) {
-            drawImage(video, idx);
+            drawImage(remaining, video, idx);
         });
 
-        setTimeout(drawVideosToCanvas, self.frameInterval);
+        //setTimeout(drawVideosToCanvas, self.frameInterval);
+        requestAnimationFrame(drawVideosToCanvas)
     }
 
-    function drawImage(video, idx) {
+    function drawImage(remaining, video, idx) {
         if (isStopDrawingFrames) {
             return;
         }
 
-        var x = 0;
-        var y = 0;
+        const x0 = 0
+        const y0 = 0
+        var x = 0 + x0;
+        var y = 0 + y0;
         var width = video.width;
         var height = video.height;
 
-        if (idx === 1) {
-            x = video.width;
+        if (idx === 1) { // this is the 2nd person
+            x = remaining[0].width /*video.width*/ + x0;
         }
 
-        if (idx === 2) {
-            y = video.height;
+        if (idx === 2) { // this is the 3rd person
+            x = remaining[0].width + remaining[1].width + x0;
+            //y = video.height + y0; // EVERYONE GOES ON ONE ROW  Beyond 4 people, we're not even supporting - probably won't ever have 5 people on at one time
         }
 
-        if (idx === 3) {
-            x = video.width;
-            y = video.height;
+        if (idx === 3) { // this is the 4th person
+            x = remaining[0].width + remaining[1].width + remaining[2].width + x0;
+//             x = video.width + x0;
+            //y = video.height + y0;
         }
 
-        if (idx === 4) {
-            y = video.height * 2;
-        }
+        // beyond 4 people we don't care
+//         if (idx === 4) {
+//             y = video.height * 2 + y0; 
+//         }
 
-        if (idx === 5) {
-            x = video.width;
-            y = video.height * 2;
-        }
+//         if (idx === 5) {
+//             x = video.width + x0;
+//             y = video.height * 2 + y0;
+//         }
 
-        if (idx === 6) {
-            y = video.height * 3;
-        }
+//         if (idx === 6) {
+//             y = video.height * 3 + y0;
+//         }
 
-        if (idx === 7) {
-            x = video.width;
-            y = video.height * 3;
-        }
+//         if (idx === 7) {
+//             x = video.width + x0;
+//             y = video.height * 3 + y0;
+//         }
 
-        if (typeof video.stream.left !== 'undefined') {
-            x = video.stream.left;
-        }
+      
+      /**
+      DO WE NEED THIS ?  3/14/22
+      **/
+//         if (typeof video.stream.left !== 'undefined') {
+//             x = video.stream.left + x0;
+//         }
 
-        if (typeof video.stream.top !== 'undefined') {
-            y = video.stream.top;
-        }
+//         if (typeof video.stream.top !== 'undefined') {
+//             y = video.stream.top + y0;
+//         }
 
-        if (typeof video.stream.width !== 'undefined') {
-            width = video.stream.width;
-        }
+//         if (typeof video.stream.width !== 'undefined') {
+//             width = video.stream.width;
+//         }
 
-        if (typeof video.stream.height !== 'undefined') {
-            height = video.stream.height;
-        }
+//         if (typeof video.stream.height !== 'undefined') {
+//             height = video.stream.height;
+//         }
 
         context.drawImage(video, x, y, width, height);
 

@@ -28,10 +28,19 @@ io.on('connection', socket => {
   socket.on('join-room', (roomId, userId) => {
     console.log('roomId=', roomId, '  userId=', userId)
     socket.join(roomId)
-    socket.on('ready',()=>{
+    socket.on('ready',(someRoomId, someUserId) => {
+        if(roomId != someRoomId) return
+        if(userId != someUserId) return
         console.log('join-room: ready: emit user-connected')
         socket.broadcast.to(roomId).emit('user-connected',userId);
     })
+    
+//     socket.on('user-dimensions', (args) => {
+//         if(roomId != args.roomId) return
+//         if(userId != args.userId) return
+//         socket.broadcast.to(roomId).emit('dimensions-broadcast', args);     
+//        // socket.emit("user-dimensions", {roomId: ROOM_ID, userId: myId, streamId: stream.id, width: width, height: height})   
+//     })
     
     // socket.to(roomId).broadcast.emit('user-connected', userId)
 
