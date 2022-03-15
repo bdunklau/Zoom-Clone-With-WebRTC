@@ -75,6 +75,7 @@ function RecordRTC(mediaStream, config) {
             return self;
         }
 
+        //  91
         initRecorder(function() {
             if (self.recordingDuration) {
                 handleRecordingDuration();
@@ -95,6 +96,7 @@ function RecordRTC(mediaStream, config) {
         var Recorder = new GetRecorderType(mediaStream, config);
 
         mediaRecorder = new Recorder(mediaStream, config);
+        // causes the fullscreen problem on iphone > GetRecorderType:1004, 5533,  2104,  2270
         mediaRecorder.record();
 
         setState('recording');
@@ -993,7 +995,7 @@ function RecordRTCConfiguration(mediaStream, config) {
  * @param {MediaStream} mediaStream - MediaStream object fetched using getUserMedia API or generated using captureStreamUntilEnded or WebAudio API.
  * @param {object} config - {type:"video", disableLogs: true, numberOfAudioChannels: 1, bufferSize: 0, sampleRate: 0, video: HTMLVideoElement, etc.}
  */
-
+ // see 105
 function GetRecorderType(mediaStream, config) {
     var recorder;
 
@@ -2032,7 +2034,7 @@ function isMediaRecorderCompatible() {
  * @param {object} config - {disableLogs:true, initCallback: function, mimeType: "video/webm", timeSlice: 1000}
  * @throws Will throw an error if first argument "MediaStream" is missing. Also throws error if "MediaRecorder API" are not supported by the browser.
  */
-
+  //  5552
 function MediaStreamRecorder(mediaStream, config) {
     var self = this;
 
@@ -2093,6 +2095,7 @@ function MediaStreamRecorder(mediaStream, config) {
      * @example
      * recorder.record();
      */
+    //  105
     this.record = function() {
         // set defaults
         self.blob = null;
@@ -2120,9 +2123,11 @@ function MediaStreamRecorder(mediaStream, config) {
         }
 
         if (typeof MediaRecorder.isTypeSupported === 'function' && recorderHints.mimeType) {
+             // iphone problem here
             if (!MediaRecorder.isTypeSupported(recorderHints.mimeType)) {
                 if (!config.disableLogs) {
                     console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
+                    logit2('MediaRecorder API seems unable to record mimeType:'+ recorderHints.mimeType)
                 }
 
                 recorderHints.mimeType = config.type === 'audio' ? 'audio/webm' : 'video/webm';
@@ -2259,6 +2264,7 @@ function MediaStreamRecorder(mediaStream, config) {
             }
         };
 
+        //  105
         if (typeof config.timeSlice === 'number') {
             updateTimeStamp();
             mediaRecorder.start(config.timeSlice);
@@ -2268,6 +2274,7 @@ function MediaStreamRecorder(mediaStream, config) {
 
             mediaRecorder.start(3.6e+6);
         }
+
 
         if (config.initCallback) {
             config.initCallback(); // old code
@@ -5517,6 +5524,7 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
      * @example
      * recorder.record();
      */
+   // 105
     this.record = function() {
         // github/muaz-khan/MultiStreamsMixer
         mixer = new MultiStreamsMixer(arrayOfMediaStreams, options.elementClass || 'multi-streams-mixer');
