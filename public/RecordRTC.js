@@ -2127,6 +2127,7 @@ function MediaStreamRecorder(mediaStream, config) {
             if (!MediaRecorder.isTypeSupported(recorderHints.mimeType)) {
                 if (!config.disableLogs) {
                     console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
+                    // TODO log error
                     logit2('MediaRecorder API seems unable to record mimeType:'+ recorderHints.mimeType)
                 }
 
