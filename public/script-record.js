@@ -162,7 +162,7 @@ function initRecordButton() {
 
         recorder = RecordRTC(streams, {
             type: 'video'
-            , mimeType: 'video/webm'
+            , mimeType: 'video/webm'  // could also try  video/mp4
 //             , previewStream: function(s) {
 //                 video.muted = true;
 //                 video.srcObject = s;
