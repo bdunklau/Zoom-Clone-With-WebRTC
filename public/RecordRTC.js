@@ -95,8 +95,7 @@ function RecordRTC(mediaStream, config) {
 
         var Recorder = new GetRecorderType(mediaStream, config);
 
-        mediaRecorder = new Recorder(mediaStream, config);
-        // causes the fullscreen problem on iphone > GetRecorderType:1004, 5533,  2104,  2270
+        mediaRecorder = new Recorder(mediaStream, config);  // causes the fullscreen problem on iphone > GetRecorderType:1004, 5533,  2104,  2270
         mediaRecorder.record();
 
         setState('recording');
@@ -2034,7 +2033,7 @@ function isMediaRecorderCompatible() {
  * @param {object} config - {disableLogs:true, initCallback: function, mimeType: "video/webm", timeSlice: 1000}
  * @throws Will throw an error if first argument "MediaStream" is missing. Also throws error if "MediaRecorder API" are not supported by the browser.
  */
-  //  5552
+  //  5545
 function MediaStreamRecorder(mediaStream, config) {
     var self = this;
 
@@ -2050,7 +2049,7 @@ function MediaStreamRecorder(mediaStream, config) {
         // bitsPerSecond: 256 * 8 * 1024,
         mimeType: 'video/webm'
     };
-
+  
     if (config.type === 'audio') {
         if (getTracks(mediaStream, 'video').length && getTracks(mediaStream, 'audio').length) {
             var stream;
@@ -2096,7 +2095,7 @@ function MediaStreamRecorder(mediaStream, config) {
      * recorder.record();
      */
     //  105
-    this.record = function() {
+    this.record = function() { 
         // set defaults
         self.blob = null;
         self.clearRecordedData();
@@ -3642,7 +3641,7 @@ function WhammyRecorder(mediaStream, config) {
                 config.initCallback();
             }
         } else {
-            video = document.createElement('video');
+            video = document.createElement('video');  // TODO FIXME
 
             setSrcObject(mediaStream, video);
 
@@ -4818,7 +4817,7 @@ function GifRecorder(mediaStream, config) {
     var isLoadedMetaData = true;
 
     if (!isHTMLObject) {
-        var video = document.createElement('video');
+        var video = document.createElement('video');  // TODO FIXME
         video.muted = true;
         video.autoplay = true;
         video.playsInline = true;
@@ -5213,10 +5212,11 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         }
     }
 
+    // 5545
     function getMixedStream() {
         isStopDrawingFrames = false;
-        var mixedVideoStream = getMixedVideoStream();
-
+        var mixedVideoStream = getMixedVideoStream(); // 5244
+      
         var mixedAudioStream = getMixedAudioStream();
         if (mixedAudioStream) {
             mixedAudioStream.getTracks().filter(function(t) {
@@ -5240,8 +5240,9 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         return mixedVideoStream;
     }
 
+    // 5219
     function getMixedVideoStream() {
-        resetVideoStreams();
+        resetVideoStreams(); // iphone this is the problem right here
 
         var capturedStream;
 
@@ -5314,8 +5315,18 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         return self.audioDestination.stream;
     }
 
+    // LESSON LEARNED
+    function createVideoElement() {
+        const myVideo = document.createElement('video')
+        myVideo.setAttribute("controls", "")
+        myVideo.setAttribute("playsinline", "")
+        myVideo.setAttribute("preload", "metadata")
+        return myVideo
+    }
+
+    // 5433
     function getVideo(stream) {
-        var video = document.createElement('video');
+        var video = createVideoElement() //document.createElement('video'); // iphone this is the problem right here !!!!!! FOUND IT  // TODO FIXME
 
         setSrcObject(stream, video);
 
@@ -5347,7 +5358,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             if (stream.getTracks().filter(function(t) {
                     return t.kind === 'video';
                 }).length) {
-                var video = getVideo(stream);
+                var video = getVideo(stream); // 5319
                 video.stream = stream;
                 videos.push(video);
 
@@ -5407,6 +5418,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         }
     };
 
+    // iphone this is the problem right here
     this.resetVideoStreams = function(streams) {
         if (streams && !(streams instanceof Array)) {
             streams = [streams];
@@ -5415,6 +5427,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         resetVideoStreams(streams);
     };
 
+    // iphone this is the problem right here
     function resetVideoStreams(streams) {
         videos = [];
         streams = streams || arrayOfMediaStreams;
@@ -5427,7 +5440,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
                 return;
             }
 
-            var video = getVideo(stream);
+            var video = getVideo(stream);  // iphone this is the problem right here
             video.stream = stream;
             videos.push(video);
         });
@@ -5541,8 +5554,8 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
             options.previewStream(mixer.getMixedStream());
         }
 
-        // record using MediaRecorder API
-        mediaRecorder = new MediaStreamRecorder(mixer.getMixedStream(), options);
+        // record using MediaRecorder API - line 2037
+        mediaRecorder = new MediaStreamRecorder(mixer.getMixedStream()/*5216*/, options);
         mediaRecorder.record();
     };
 
@@ -6025,7 +6038,7 @@ function WebAssemblyRecorder(stream, config) {
         return new ReadableStream({
             start: function(controller) {
                 var cvs = document.createElement('canvas');
-                var video = document.createElement('video');
+                var video = document.createElement('video');  // TODO FIXME
                 var first = true;
                 video.srcObject = stream;
                 video.muted = true;
