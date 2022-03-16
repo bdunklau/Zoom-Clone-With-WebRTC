@@ -13,6 +13,10 @@ const myPeer = new Peer(undefined, {
   port: '443'
 })
 
+document.body.onorientationchange = (evt) => {
+  logit2('evt.target.orientation = '+evt.target.orientation)
+}
+
 var myId
 const myVideo = createVideoElement()
 myVideo.muted = true
