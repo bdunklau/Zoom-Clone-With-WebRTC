@@ -13,10 +13,6 @@ const myPeer = new Peer(undefined, {
   port: '443'
 })
 
-document.body.onorientationchange = (evt) => {
-  logit2('evt.target.orientation = '+evt.target.orientation)
-}
-
 var myId
 const myVideo = createVideoElement()
 myVideo.muted = true
@@ -28,7 +24,13 @@ navigator.mediaDevices.getUserMedia({
   audio: true
 }).then((stream) => {
   console.log('myStream: ', stream)
-  
+
+  document.body.onorientationchange = (evt) => {
+    logit2('evt.target.orientation = '+evt.target.orientation)
+    // other clients listen for this IN THIS FILE below
+    socket.emit("orientation-change", ROOM_ID, evt.target.orientation, stream.id)
+  }
+
   addVideoStream(myVideo, stream, {local: true}, '111111111 async') 
   
 //   logit2('CHECK HERE: w='+stream.width+'  h='+stream.height)
@@ -83,6 +85,13 @@ navigator.mediaDevices.getUserMedia({
     //setTimeout(connectToNewUser,5000,userId,stream)
   })
   
+  socket.on('orientation-change', (orientation, streamId) => {
+    logit2('remote orientation change: '+orientation)
+    logit2('remote streamId: '+streamId)
+    console.log('remote orientation change: '+orientation)
+    console.log('remote streamId: '+streamId)
+  })
+
 //   socket.on('dimensions-broadcast', args => {
 //       const strm = streamProps[args.streamId]
 //       strm.width = args.width

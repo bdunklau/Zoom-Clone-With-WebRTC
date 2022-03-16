@@ -35,6 +35,11 @@ io.on('connection', socket => {
         socket.broadcast.to(roomId).emit('user-connected',userId);
     })
     
+    socket.on('orientation-change', (roomId, orientation, streamId) => {
+      console.log('server: orientationchange to: ', orientation)
+      socket.to(roomId).broadcast.emit('orientation-change', orientation, streamId)
+    })
+
 //     socket.on('user-dimensions', (args) => {
 //         if(roomId != args.roomId) return
 //         if(userId != args.userId) return
