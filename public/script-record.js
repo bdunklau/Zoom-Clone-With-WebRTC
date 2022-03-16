@@ -237,7 +237,17 @@ function addVideoStream(video, stream, env, dbg) {
         logit2('addVideoStream: before '+dbg+'  window.orientation='+window.orientation)
         logit2('addVideoStream: before '+dbg+'  stream.width='+w+'  stream.height='+h)   //  addVideoStream: before 3333333 stream.width=320 stream.height=240
       
-        if(window.orientation == 0/*portrait*/ && (h < w)) {
+        /**
+        This is a weird case...  On my phone, in portrait orientation, the width and height values were still landscape
+        values  (w=640  and  h=480)   So I check for portrait orientation and height < width
+        If portrait and h < w, then flip the height and the width
+
+        env.local...   Lastly, only do this flip when env.local=true
+        This function is called when remote people connect also.  
+        WITHOUT THIS CONDITIONAL, you will erroneously flip h and w for a remote client
+               not sure what happens if the remote client is another phone with h and w that NEED to be flipped 
+        **/
+        if(env.local && (window.orientation == 0)/*portrait*/ && (h < w)) {
             // then flip the dims
             h = video.videoWidth
             w = video.videoHeight

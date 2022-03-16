@@ -5083,49 +5083,35 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             }
         });
 
-//         console.log('CHECKING... canvas.width = ', canvas.width)
         if (fullcanvas) {
             canvas.width = fullcanvas.stream.width;
             canvas.height = fullcanvas.stream.height;
         } else if (remaining.length) {
-            if(canvas.width === 1) {
+            if(canvas.width === 1 /* 1 is my way of saying unitialized */) {
+                /**
+                Assume: No more than 4 video feeds
+                Assume: All videos on one row
+                Rule: Make all videos the same height.  Height of the shortest video.
+                Portrait rule: because portrait videos might have to have width reduced
+                  (i.e.  Portrait dims of h=640, w=480 will get scaled down to h=480, w=360)
+                  ...we have to loop through all the videos and possibly recalculate their h and w
+                **/
+                canvas.height = Math.min(...remaining.map(r => r.height))
+                // calculate altered dimensions...
+                remaining.forEach(vid => {
+                    console.log('canvas.height / vid.height * vid.width = '+canvas.height+'/'+vid.height+' * '+vid.width)
+                    vid.width = canvas.height / vid.height * vid.width
+                    vid.height = canvas.height
+                })
+                
+                canvas.width = remaining.map(r => r.width).reduce((sum, item) => { sum += item; return sum; }, 0)
+              
                 //  canvas created at 4957
-                //canvas.width = videosLength > 1 ? remaining[0].width * 2 : remaining[0].width;
-                if(videosLength === 1) {
-                  canvas.width = remaining[0].width
-                  canvas.height = remaining[0].height
-                }
-                else if(videosLength === 2) {
-                  canvas.width = remaining[0].width + remaining[1].width
-                  canvas.height = Math.min(remaining[0].height, remaining[1].height)
-                }
-                else if(videosLength === 3) canvas.width = remaining[0].width + remaining[1].width + remaining[2].width
-                else if(videosLength === 4) canvas.width = remaining[0].width + remaining[1].width + remaining[2].width + remaining[3].width
-
-//                 var height = 1;
-//                 if (videosLength === 3 || videosLength === 4) {
-//                     height = 2;
-//                 }
-//                 if (videosLength === 5 || videosLength === 6) {
-//                     height = 3;
-//                 }
-//                 if (videosLength === 7 || videosLength === 8) {
-//                     height = 4;
-//                 }
-//                 if (videosLength === 9 || videosLength === 10) {
-//                     height = 5;
-//                 }
-//                 canvas.height = remaining[0].height * height;
-                console.log('JUST SET canvas.width = ', canvas.width)                
+//                 console.log('VIDEO DIMS remaining = ', remaining)  
+//                 console.log('JUST SET canvas.width = ', canvas.width)    
+//                 console.log('JUST SET canvas.height = ', canvas.height)            
             } 
-//             else {
-//                 console.log('ALREADY SET canvas.width = ', canvas.width)                 
-//             }
         } 
-//         else {
-//             canvas.width = self.width || 360;
-//             canvas.height = self.height || 240;
-//         }
 
         if (fullcanvas && fullcanvas instanceof HTMLVideoElement) {
             drawImage(fullcanvas);
@@ -5148,8 +5134,8 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         const y0 = 0
         var x = 0 + x0;
         var y = 0 + y0;
-        var width = video.width;
-        var height = video.height;
+        var width = remaining[idx].width;
+        var height =  canvas.height  //video.height;
 
         if (idx === 1) { // this is the 2nd person
             x = remaining[0].width /*video.width*/ + x0;
@@ -5167,23 +5153,6 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         }
 
         // beyond 4 people we don't care
-//         if (idx === 4) {
-//             y = video.height * 2 + y0; 
-//         }
-
-//         if (idx === 5) {
-//             x = video.width + x0;
-//             y = video.height * 2 + y0;
-//         }
-
-//         if (idx === 6) {
-//             y = video.height * 3 + y0;
-//         }
-
-//         if (idx === 7) {
-//             x = video.width + x0;
-//             y = video.height * 3 + y0;
-//         }
 
       
       /**
