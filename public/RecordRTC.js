@@ -1,5 +1,13 @@
 'use strict';
 
+
+
+function logit3(eleId, msg) {
+    const div = document.getElementById(eleId)
+    if(!div) return
+    div.innerHTML = msg
+}
+
 // Last time updated: 2021-03-09 3:20:22 AM UTC
 
 // ________________
@@ -47,6 +55,29 @@ function RecordRTC(mediaStream, config) {
 
     // a reference to user's recordRTC object
     var self = this;
+  
+  
+    //  see  var returnObject = {...}   below
+    function toPortrait(streamId) {
+        logit2('toPortrait')
+//         console.log('toPortrait:  self.state = ', self.state)
+        console.log('toPortrait:  mediaRecorder = ', mediaRecorder)
+//         console.log('toPortrait:  streamId = ', streamId)
+        if(self.state != 'recording') return // don't care
+        if(!mediaRecorder) return
+        mediaRecorder.toPortrait(streamId)        
+    }
+  
+    //  see  var returnObject = {...}   below
+    function toLandscape(streamId) {
+        logit2('toLandscape')
+//         console.log('toLandscape:  self.state = ', self.state)
+        console.log('toLandscape:  mediaRecorder = ', mediaRecorder)
+//         console.log('toLandscape:  streamId = ', streamId)
+        if(self.state != 'recording') return // don't care
+        if(!mediaRecorder) return
+        mediaRecorder.toLandscape(streamId)
+    }
 
     function startRecording(config2) {
         if (!config.disableLogs) {
@@ -63,6 +94,7 @@ function RecordRTC(mediaStream, config) {
             console.log('started recording ' + config.type + ' stream.');
         }
 
+        //  instantiated at  118
         if (mediaRecorder) {
             mediaRecorder.clearRecordedData();
             mediaRecorder.record();
@@ -92,10 +124,20 @@ function RecordRTC(mediaStream, config) {
                 initCallback = config.initCallback = null; // recorder.initRecorder should be call-backed once.
             };
         }
-
+ 
+        //  1008
         var Recorder = new GetRecorderType(mediaStream, config);
 
-        mediaRecorder = new Recorder(mediaStream, config);  // causes the fullscreen problem on iphone > GetRecorderType:1004, 5533,  2104,  2270
+        /**
+        can be any of:  StereoAudioRecorder,  
+            MediaStreamRecorder (Safari)  2071
+            WhammyRecorder
+            WebAssemblyRecorder
+            GifRecorder
+            CanvasRecorder
+            MultiStreamRecorder,  5603
+        **/
+        mediaRecorder = new Recorder(mediaStream, config);
         mediaRecorder.record();
 
         setState('recording');
@@ -345,9 +387,11 @@ function RecordRTC(mediaStream, config) {
         console.warn(WARNING);
     }
 
-    var mediaRecorder;
+    var mediaRecorder; // instantiated on 108
 
     var returnObject = {
+        toLandscape: toLandscape,
+        toPortrait: toPortrait,
         /**
          * This method starts the recording.
          * @method
@@ -994,7 +1038,7 @@ function RecordRTCConfiguration(mediaStream, config) {
  * @param {MediaStream} mediaStream - MediaStream object fetched using getUserMedia API or generated using captureStreamUntilEnded or WebAudio API.
  * @param {object} config - {type:"video", disableLogs: true, numberOfAudioChannels: 1, bufferSize: 0, sampleRate: 0, video: HTMLVideoElement, etc.}
  */
- // see 105
+ // see 105-108
 function GetRecorderType(mediaStream, config) {
     var recorder;
 
@@ -1007,7 +1051,7 @@ function GetRecorderType(mediaStream, config) {
     }
 
     if (typeof MediaRecorder !== 'undefined' && 'requestData' in MediaRecorder.prototype && !isChrome) {
-        recorder = MediaStreamRecorder;
+        recorder = MediaStreamRecorder; // 2049
     }
 
     // video recorder (in WebM format)
@@ -1034,13 +1078,13 @@ function GetRecorderType(mediaStream, config) {
             // audio-only recording
             if (config.type === 'audio') {
                 if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('audio/webm')) {
-                    recorder = MediaStreamRecorder;
+                    recorder = MediaStreamRecorder; // 2049
                 }
                 // else recorder = StereoAudioRecorder;
             } else {
                 // video or screen tracks
                 if (typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported('video/webm')) {
-                    recorder = MediaStreamRecorder;
+                    recorder = MediaStreamRecorder; // 2049
                 }
             }
         }
@@ -1059,7 +1103,7 @@ function GetRecorderType(mediaStream, config) {
     }
 
     if (!recorder && isSafari) {
-        recorder = MediaStreamRecorder;
+        recorder = MediaStreamRecorder; // 2049
     }
 
     return recorder;
@@ -2033,7 +2077,7 @@ function isMediaRecorderCompatible() {
  * @param {object} config - {disableLogs:true, initCallback: function, mimeType: "video/webm", timeSlice: 1000}
  * @throws Will throw an error if first argument "MediaStream" is missing. Also throws error if "MediaRecorder API" are not supported by the browser.
  */
-  //  5545
+  //  5545,  1074,  123
 function MediaStreamRecorder(mediaStream, config) {
     var self = this;
 
@@ -2049,6 +2093,22 @@ function MediaStreamRecorder(mediaStream, config) {
         // bitsPerSecond: 256 * 8 * 1024,
         mimeType: 'video/webm'
     };
+  
+    this.toLandscape = function(streamId) {
+        console.log('toLandscape: streamId = ', streamId)
+        console.log('toLandscape: mixer = ', mixer)
+        if(mixer) {
+            mixer.toLandscape(streamId)    //  5003        
+        }
+    }
+  
+    this.toPortrait = function(streamId) {
+        console.log('toPortrait: streamId = ', streamId)
+        console.log('toPortrait: mixer = ', mixer)
+        if(mixer) {
+            mixer.toPortrait(streamId)     //  5008
+        }
+    }
   
     if (config.type === 'audio') {
         if (getTracks(mediaStream, 'video').length && getTracks(mediaStream, 'audio').length) {
@@ -4960,6 +5020,9 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
     var videos = [];
     var isStopDrawingFrames = false;
+    var orientationchanged = false
+    var isPortrait = true
+    var theStreamId = ''
 
     var canvas = document.createElement('canvas');
     console.log('MultiStreamsMixer: created canvas element')
@@ -4973,6 +5036,19 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
     canvas.width = 1
     canvas.className = elementClass;
     (document.body || document.documentElement).appendChild(canvas);
+  
+    this.toLandscape = function(streamId) {  // 5544
+        console.log('toLandscape:  streamId = ', streamId)
+        orientationchanged = true
+        isPortrait = false
+        theStreamId = streamId
+    }
+  
+    this.toPortrait = function(streamId) {  //  5544
+        orientationchanged = true
+        isPortrait = true
+        theStreamId = streamId
+    }
 
     this.disableLogs = false;
     this.frameInterval = 10;
@@ -5061,6 +5137,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         drawVideosToCanvas();
     };
 
+    var debugCounter = 0
     function drawVideosToCanvas() {
         if (isStopDrawingFrames) {
             return;
@@ -5074,6 +5151,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
             if (!video.stream) {
                 video.stream = {};
             }
+            //console.log('video.stream.id = ', video.stream.id)
 
             if (video.stream.fullcanvas) {
                 fullcanvas = video;
@@ -5099,9 +5177,12 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
                 canvas.height = Math.min(...remaining.map(r => r.height))
                 // calculate altered dimensions...
                 remaining.forEach(vid => {
+                    console.log('vid.stream.id = ', vid.stream.id)
                     console.log('canvas.height / vid.height * vid.width = '+canvas.height+'/'+vid.height+' * '+vid.width)
                     vid.width = canvas.height / vid.height * vid.width
                     vid.height = canvas.height
+                    console.log('vid.width = ', vid.width)
+                    console.log('vid.height = ', vid.height)
                 })
                 
                 canvas.width = remaining.map(r => r.width).reduce((sum, item) => { sum += item; return sum; }, 0)
@@ -5111,6 +5192,43 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 //                 console.log('JUST SET canvas.width = ', canvas.width)    
 //                 console.log('JUST SET canvas.height = ', canvas.height)            
             } 
+            if(orientationchanged) {
+                debugCounter = 0
+                /**
+                In the beginning, portrait dim h=640 x w=480 ->  h=480 x w=360  (because another feed is only 480 tall)
+                Rotate to landscape:  Leave height at 480.  It's the width that changes, not the height
+                **/
+                console.log('RecordRTC:  orientationchanged = ', orientationchanged)
+                orientationchanged = false
+                var thevid = remaining.find(vid => vid.stream.id === theStreamId)
+                theStreamId = ''
+                if(thevid) {
+                    // after rotating, the height will still = canvas.height but what will the width be?
+                    // have to know the aspect ratio...
+                    const xx = canvas.height / thevid.width
+                    const h_ = canvas.height
+                    const w_ = h_ * xx
+                    thevid.height = h_
+                    thevid.width = w_
+                    console.log('flip ', thevid.stream.id)
+                    console.log('flip thevid.width=', thevid.width)
+                    console.log('flip thevid.height=', thevid.height)
+                }                
+              
+//                 canvas.height = Math.min(...remaining.map(r => r.height))
+//                 // calculate altered dimensions...
+//                 remaining.forEach(vid => {
+//                     console.log('vid.stream.id = ', vid.stream.id)
+//                     console.log('canvas.height / vid.height * vid.width = '+canvas.height+'/'+vid.height+' * '+vid.width)
+//                     vid.width = canvas.height / vid.height * vid.width
+//                     vid.height = canvas.height
+//                     console.log('vid.width = ', vid.width)
+//                     console.log('vid.height = ', vid.height)
+//                 })
+                
+                canvas.width = remaining.map(r => r.width).reduce((sum, item) => { sum += item; return sum; }, 0)
+                console.log('canvas.width is now: ', canvas.width)
+            }
         } 
 
         if (fullcanvas && fullcanvas instanceof HTMLVideoElement) {
@@ -5120,6 +5238,8 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         remaining.forEach(function(video, idx) {
             drawImage(remaining, video, idx);
         });
+      
+        logit3('canvas-dims', 'canvas w='+canvas.width+' h='+canvas.height)
 
         //setTimeout(drawVideosToCanvas, self.frameInterval);
         requestAnimationFrame(drawVideosToCanvas)
@@ -5173,6 +5293,17 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 //         if (typeof video.stream.height !== 'undefined') {
 //             height = video.stream.height;
 //         }
+      
+        if(debugCounter < 4) {
+            ++debugCounter
+            console.log('stream id:', video.stream.id)
+            console.log('canvas.w=',canvas.width,' canvas.h=',canvas.height,'  w=', width, ' h=', height, ' x=', x, ' y=',y)
+        }
+      
+        if(idx === 0)
+            logit3('vid1-dims', 'Video 1 w='+remaining[0].width+' h='+remaining[0].height+' x='+x+' y='+y)
+        if(idx === 1)
+            logit3('vid2-dims', 'Video 2 w='+remaining[1].width+' h='+remaining[1].height+' x='+x+' y='+y)
 
         context.drawImage(video, x, y, width, height);
 
@@ -5468,6 +5599,7 @@ if (typeof RecordRTC === 'undefined') {
  * @param {object} config - {disableLogs:true, frameInterval: 1, mimeType: "video/webm"}
  */
 
+//   128
 function MultiStreamRecorder(arrayOfMediaStreams, options) {
     arrayOfMediaStreams = arrayOfMediaStreams || [];
     var self = this;
@@ -5498,6 +5630,22 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
 
     if (!options.video.height) {
         options.video.height = 240;
+    }
+  
+    this.toLandscape = function(streamId) {
+        console.log('toLandscape: streamId = ', streamId)
+        console.log('toLandscape: mixer = ', mixer)
+        if(mixer) {
+            mixer.toLandscape(streamId)    //  5003        
+        }
+    }
+  
+    this.toPortrait = function(streamId) {
+        console.log('toPortrait: streamId = ', streamId)
+        console.log('toPortrait: mixer = ', mixer)
+        if(mixer) {
+            mixer.toPortrait(streamId)     //  5008
+        }
     }
 
     /**

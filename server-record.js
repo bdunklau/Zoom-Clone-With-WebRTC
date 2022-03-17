@@ -37,7 +37,7 @@ io.on('connection', socket => {
     
     socket.on('orientation-change', (roomId, orientation, streamId) => {
       console.log('server: orientationchange to: ', orientation)
-      socket.to(roomId).broadcast.emit('orientation-change', orientation, streamId)
+      io.in(roomId).emit('orientation-change', orientation, streamId)
     })
 
 //     socket.on('user-dimensions', (args) => {

@@ -13,6 +13,7 @@ const myPeer = new Peer(undefined, {
   port: '443'
 })
 
+var recorder
 var myId
 const myVideo = createVideoElement()
 myVideo.muted = true
@@ -27,7 +28,9 @@ navigator.mediaDevices.getUserMedia({
 
   document.body.onorientationchange = (evt) => {
     logit2('evt.target.orientation = '+evt.target.orientation)
-    // other clients listen for this IN THIS FILE below
+    /**
+    EVERYONE has to listen for this, even ME.  Because I could be the one who's recording and I could be the one who rotated my phone
+    **/
     socket.emit("orientation-change", ROOM_ID, evt.target.orientation, stream.id)
   }
 
@@ -90,6 +93,18 @@ navigator.mediaDevices.getUserMedia({
     logit2('remote streamId: '+streamId)
     console.log('remote orientation change: '+orientation)
     console.log('remote streamId: '+streamId)
+    if(recorder) {
+      console.log('orientation-change: recorder.getState() = ', recorder.getState())
+      console.log('orientation-change: recorder = ', recorder)
+      if(orientation === 0) {
+          // landscape > portrait
+          recorder.toPortrait(streamId)
+      }
+      else if(orientation === 90 || orientation === -90) {
+          // portrait > landscape
+          recorder.toLandscape(streamId)
+      }
+    }
   })
 
 //   socket.on('dimensions-broadcast', args => {
@@ -164,9 +179,8 @@ function hideVideoGrid() {
 }
 
 const chunks = []
-var recorder
 const streams = []
-const video = document.querySelector('video')
+const video = document.querySelector('video') // TODO FIXME this probably doesn't exist - at least need to check for null
 function initRecordButton() {
     const recordBtn = document.getElementById('recordBtn')
     if(!recordBtn) return
