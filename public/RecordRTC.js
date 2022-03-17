@@ -95,7 +95,7 @@ function RecordRTC(mediaStream, config) {
 
         var Recorder = new GetRecorderType(mediaStream, config);
 
-        mediaRecorder = new Recorder(mediaStream, config);  // causes the fullscreen problem on iphone > GetRecorderType:1004, 5533,  2104,  2270
+        mediaRecorder = new Recorder(mediaStream, config);  //  GetRecorderType:1004, 5533,  2104,  2270
         mediaRecorder.record();
 
         setState('recording');
@@ -2122,7 +2122,6 @@ function MediaStreamRecorder(mediaStream, config) {
         }
 
         if (typeof MediaRecorder.isTypeSupported === 'function' && recorderHints.mimeType) {
-             // iphone problem here
             if (!MediaRecorder.isTypeSupported(recorderHints.mimeType)) {
                 if (!config.disableLogs) {
                     console.warn('MediaRecorder API seems unable to record mimeType:', recorderHints.mimeType);
@@ -5211,7 +5210,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
 
     // 5219
     function getMixedVideoStream() {
-        resetVideoStreams(); // iphone this is the problem right here
+        resetVideoStreams();
 
         var capturedStream;
 
@@ -5387,7 +5386,6 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         }
     };
 
-    // iphone this is the problem right here
     this.resetVideoStreams = function(streams) {
         if (streams && !(streams instanceof Array)) {
             streams = [streams];
@@ -5396,7 +5394,6 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
         resetVideoStreams(streams);
     };
 
-    // iphone this is the problem right here
     function resetVideoStreams(streams) {
         videos = [];
         streams = streams || arrayOfMediaStreams;
@@ -5409,7 +5406,7 @@ function MultiStreamsMixer(arrayOfMediaStreams, elementClass) {
                 return;
             }
 
-            var video = getVideo(stream);  // iphone this is the problem right here
+            var video = getVideo(stream);
             video.stream = stream;
             videos.push(video);
         });
