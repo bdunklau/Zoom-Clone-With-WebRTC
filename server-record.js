@@ -25,6 +25,7 @@ s3cmd put -P /root/Zoom-Clone-With-WebRTC/public/uploads/7c3d48977964bb8c26811f0
 
 
 const child_process = require('child_process');
+const fs = require('fs')  //  https://nodejs.dev/learn/the-nodejs-fs-module
 const express = require('express')
 const multer  = require('multer');  //  https://stackoverflow.com/questions/39677993/send-blob-data-to-node-using-fetch-multer-express
 const app = express()
@@ -84,12 +85,12 @@ app.post('/api/test', uploadIt, async (req, res) => {
     console.log(req.file);
   
     // upload to vultr storage
-    const url = await uploadFile(req.file.path, req.file.originalname, 'zoomclone', 'tempfolder')
-//     console.log('url: ', url)
-    res.send({url: url+'#t=0.1'/*makes iphones display first frame*/, videoType: "video/mp4"})
-    
+    const url = await uploadFile(req.file.path, req.file.originalname, 'zoomclone', 'tempfolder')    
   
     // delete file after upload - use  req.file.filename
+    await deleteFile(req.file.path)
+    
+    res.send({url: url+'#t=0.1'/*makes iphones display first frame*/, videoType: "video/mp4"})
 })
 
 
@@ -132,6 +133,17 @@ async function runS3Cmd(args) {
         });          
     })            
 
+}
+
+
+async function deleteFile(path) {
+    return new Promise((resolve, reject) => {
+        fs.rmdir(path, {recursive:true}, function(err) {
+            console.log('DELETING: ', path)
+            if(err) reject(err)
+            else resolve()
+        })
+    }) 
 }
 
 
