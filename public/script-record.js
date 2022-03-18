@@ -176,6 +176,12 @@ function initRecordButton() {
         recorder = RecordRTC(streams, {
             type: 'video'
             , mimeType: 'video/webm'  // could also try  video/mp4
+
+            //  ref:  https://bugs.webkit.org/show_bug.cgi?id=234784
+            , bitsPerSecond: 500000 // 500000 seems decent even on a computer,  100000 starts to get blurry on computer,   10000 is noticeable pixelation even on phone
+//               appears to be ignored - at least by iphones
+//             , videoBitsPerSecond: 1000000
+
 //             , previewStream: function(s) {
 //                 video.muted = true;
 //                 video.srcObject = s;
