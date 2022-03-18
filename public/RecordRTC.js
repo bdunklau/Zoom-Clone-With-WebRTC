@@ -63,7 +63,10 @@ function RecordRTC(mediaStream, config) {
             console.log('started recording ' + config.type + ' stream.');
         }
 
+        logit2('startRecording: mediaRecorder = '+ mediaRecorder)
         if (mediaRecorder) {
+            logit2('startRecording: bitsPerSecond = '+mediaRecorder.bitsPerSecond)
+            logit2('startRecording: videoBitsPerSecond = '+mediaRecorder.videoBitsPerSecond)
             mediaRecorder.clearRecordedData();
             mediaRecorder.record();
 
@@ -96,6 +99,9 @@ function RecordRTC(mediaStream, config) {
         var Recorder = new GetRecorderType(mediaStream, config);
 
         mediaRecorder = new Recorder(mediaStream, config);  //  GetRecorderType:1004, 5533,  2104,  2270
+        logit2('initRecorder: mediaRecorder = '+ mediaRecorder)
+        logit2('initRecorder: bitsPerSecond = '+mediaRecorder.bitsPerSecond)
+        logit2('initRecorder: videoBitsPerSecond = '+mediaRecorder.videoBitsPerSecond)
         mediaRecorder.record();
 
         setState('recording');
@@ -169,6 +175,7 @@ function RecordRTC(mediaStream, config) {
 
             if (blob && !config.disableLogs) {
                 console.log(blob.type, '->', bytesToSize(blob.size));
+                logit2(blob.type+ '->'+ bytesToSize(blob.size))
             }
 
             if (callback) {
@@ -2132,6 +2139,11 @@ function MediaStreamRecorder(mediaStream, config) {
                 recorderHints.mimeType = config.type === 'audio' ? 'audio/webm' : 'video/webm';
             }
         }
+      
+        logit2('===============================================')
+        logit2('MediaStreamRecorder: recorderHints...')
+        logit2(JSON.stringify(recorderHints))
+        logit2('===============================================')
 
         // using MediaRecorder API here
         try {
@@ -2141,7 +2153,18 @@ function MediaStreamRecorder(mediaStream, config) {
             config.mimeType = recorderHints.mimeType;
         } catch (e) {
             // chrome-based fallback
-            mediaRecorder = new MediaRecorder(mediaStream);
+            logit2('OOPS - Got an ERROR '+e.toString())
+          
+            if(e.toString().toLowerCase().indexOf('notsupportederror') != -1) {
+                config.mimeType = recorderHints.mimeType = 'video/mp4'
+                try {
+                    mediaRecorder = new MediaRecorder(mediaStream, recorderHints);
+                } catch(e2) {
+                    logit2('OOPS AGAIN - Got an ERROR '+e2.toString())
+                    mediaRecorder = new MediaRecorder(mediaStream);
+                }
+            }
+          
         }
 
         // old hack?
@@ -5471,6 +5494,11 @@ function MultiStreamRecorder(arrayOfMediaStreams, options) {
 
     var mixer;
     var mediaRecorder;
+  
+    logit2('=========================')
+    logit2('MultiStreamRecorder: options...')
+    logit2(JSON.stringify(options))
+    logit2('=========================')
 
     options = options || {
         elementClass: 'multi-streams-mixer',
