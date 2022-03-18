@@ -20,6 +20,29 @@ s3cmd put -P /root/Zoom-Clone-With-WebRTC/public/uploads/7c3d48977964bb8c26811f0
     From VideoBModel:
         let videoType = "video/mp4"
         let videoUrl =  `https://ewr1.vultrobjects.com/${bucket}/${compRecord.composition_sid}/video.mp4`
+        
+        
+===============================================================================================================================
+Sample output from node:   Notice that we may be able to give some progress indication to the user by looking for [part x of y] in the output
+
+[StorageModel.runS3Cmd]  s3cmd put -P /root/Zoom-Clone-With-WebRTC/public/uploads/9880d0b1fc2242e51d89d86549cb9786 s3://zoomclone/tempfolder/340961cf-ef81-4412-b1a3-b2b4d55116c2.mp4
+[StorageModel.runS3Cmd]  [STDOUT] upload: '/root/Zoom-Clone-With-WebRTC/public/uploads/9880d0b1fc2242e51d89d86549cb9786' -> 's3://zoomclone/tempfolder/340961cf-ef81-4412-b1a3-b2b4d55116c2.mp4'  [part 1 of 3, 15MB] [1 of 1]
+
+    65536 of 15728640     0% in    0s   751.95 KB/s
+ 15728640 of 15728640   100% in    0s    21.02 MB/s  done
+
+[StorageModel.runS3Cmd]  [STDOUT] upload: '/root/Zoom-Clone-With-WebRTC/public/uploads/9880d0b1fc2242e51d89d86549cb9786' -> 's3://zoomclone/tempfolder/340961cf-ef81-4412-b1a3-b2b4d55116c2.mp4'  [part 2 of 3, 15MB] [1 of 1]
+
+    65536 of 15728640     0% in    0s   757.49 KB/s
+ 15728640 of 15728640   100% in    0s    30.48 MB/s  done
+
+[StorageModel.runS3Cmd]  [STDOUT] upload: '/root/Zoom-Clone-With-WebRTC/public/uploads/9880d0b1fc2242e51d89d86549cb9786' -> 's3://zoomclone/tempfolder/340961cf-ef81-4412-b1a3-b2b4d55116c2.mp4'  [part 3 of 3, 8MB] [1 of 1]
+
+   65536 of 8680211     0% in    0s  1363.21 KB/s
+ 8680211 of 8680211   100% in    0s    27.97 MB/s  done
+
+[StorageModel.runS3Cmd]  [STDOUT] Public URL of the object is: http://zoomclone.ewr1.vultrobjects.com/tempfolder/340961cf-ef81-4412-b1a3-b2b4d55116c2.mp4
+        
 
 **/
 
@@ -49,6 +72,10 @@ app.get('/', (req, res) => {
   res.redirect(`/${uuidV4()}`)
 })
 
+/**
+This works - if you really want to preserve the file name.  Multer will make its own name though.  And the name it uses really doesn't
+matter because we know what that file name AND we know the name of the file passed from the client
+**/
 //  https://stackoverflow.com/questions/39677993/send-blob-data-to-node-using-fetch-multer-express
 // const storage = multer.diskStorage({
 //     destination: (req, file, cb) => {
@@ -58,8 +85,8 @@ app.get('/', (req, res) => {
 //         cb(null, file.originalname);
 //     }
 // })
-
 // const upload = multer({storage});
+
 const upload = multer({ dest: __dirname + '/public/uploads/' });
 
 var uploadIt = upload.single('upl');
