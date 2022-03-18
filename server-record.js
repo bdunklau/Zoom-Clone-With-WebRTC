@@ -1,4 +1,32 @@
+/**
+
+'put', public_flag, fullpath, `s3://${bucket}/${folder}/${filename}`
+blob:https://test.headsup.video/b6002615-c813-4403-bfd4-148c3401dca2
+
+s3cmd put -P /root/Zoom-Clone-With-WebRTC/public/uploads/7c3d48977964bb8c26811f0ca130ffab s3://zoomclone/7c3d48977964bb8c26811f0ca130ffab.mp4
+
+
+  
+    async uploadFile(fullpath, filename, bucket, folder) {
+        const public_flag = '-P'
+        return await this.runS3Cmd( ['put', public_flag, fullpath, `s3://${bucket}/${folder}/${filename}` ] )
+    }
+    
+        const bucket = 'dev-bucket'
+        const compSid = 'CJ2c0f54ed14102d67b558767227ce6790'
+        const filename = 'thumb.jpg'
+        
+        
+    From VideoBModel:
+        let videoType = "video/mp4"
+        let videoUrl =  `https://ewr1.vultrobjects.com/${bucket}/${compRecord.composition_sid}/video.mp4`
+
+**/
+
+
+const child_process = require('child_process');
 const express = require('express')
+const multer  = require('multer');  //  https://stackoverflow.com/questions/39677993/send-blob-data-to-node-using-fetch-multer-express
 const app = express()
 const server = require('http').Server(app)
 const io = require('socket.io')(server)
@@ -19,6 +47,93 @@ app.use(express.static('public'))
 app.get('/', (req, res) => {
   res.redirect(`/${uuidV4()}`)
 })
+
+//  https://stackoverflow.com/questions/39677993/send-blob-data-to-node-using-fetch-multer-express
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => {
+//         cb(null, __dirname + '/public/uploads/');
+//     },
+//     filename: (req, file, cb) => {
+//         cb(null, file.originalname);
+//     }
+// })
+
+// const upload = multer({storage});
+const upload = multer({ dest: __dirname + '/public/uploads/' });
+
+var uploadIt = upload.single('upl');
+app.post('/api/test', uploadIt, async (req, res) => {
+    // the file has already been uploaded at this point
+    // the upload happens in "uploadIt"
+   
+    console.log(req.body);
+  
+    /**
+    Ex:
+     {
+        fieldname: 'upl',
+        originalname: '8ecf6c13-4687-4c8b-b5a2-109b1a0653f1.mp4',
+        encoding: '7bit',
+        mimetype: 'video/x-matroska',
+        destination: '/root/Zoom-Clone-With-WebRTC/public/uploads/',
+        filename: '3b06ff953d4ff566db709f5dcd394ae4',
+        path: '/root/Zoom-Clone-With-WebRTC/public/uploads/3b06ff953d4ff566db709f5dcd394ae4',
+        size: 393993
+     }
+    **/
+    console.log(req.file);
+  
+    // upload to vultr storage
+    const url = await uploadFile(req.file.path, req.file.originalname, 'zoomclone', 'tempfolder')
+//     console.log('url: ', url)
+    res.send({url: url+'#t=0.1'/*makes iphones display first frame*/, videoType: "video/mp4"})
+    
+  
+    // delete file after upload - use  req.file.filename
+})
+
+
+/**
+from  StorageModel.js
+**/
+async function uploadFile(fullpath, filename, bucket, folder) {
+    const public_flag = '-P'
+    await runS3Cmd( ['put', public_flag, fullpath, `s3://${bucket}/${folder}/${filename}` ] ) // assumes no error uploading
+    return `https://ewr1.vultrobjects.com/${bucket}/${folder}/${filename}`
+}
+
+  
+/**
+from  StorageModel.js
+**/
+async function runS3Cmd(args) {
+    const cmd = 's3cmd'
+    return new Promise((resolve, reject) => {
+        const spawn = child_process.spawn
+        const theResult = []
+        console.log(`[StorageModel.runS3Cmd]  ${cmd} ${args.join(' ')}`)
+        var proc = spawn(cmd, args);
+
+        proc.stdout.on('data', function(data) {
+            console.log(`[StorageModel.runS3Cmd]  [STDOUT]`, ''+data);
+            theResult.push(''+data)
+        });
+
+        proc.stderr.setEncoding("utf8")
+        proc.stderr.on('data', function(data) {
+            // THERE IS OUTPUT HERE BUT NOT SURE HOW IMPORTANT IT IS.  WE GET THIS OUTPUT EVEN WHEN THINGS ARE PROCESSING OK - WHICH IS WEIRD
+            console.log(`[StorageModel.runS3Cmd]  [STDERR]`, ''+data);
+            //reject(data)
+        });
+
+        proc.on('close', function() {
+            //console.log('finished:  theResult = ', theResult);
+            resolve(theResult)
+        });          
+    })            
+
+}
+
 
 app.get('/:room', (req, res) => {
   res.render('record', { roomId: req.params.room })

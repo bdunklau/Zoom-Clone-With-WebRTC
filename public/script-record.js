@@ -192,7 +192,7 @@ function initRecordButton() {
 //         recorder = new MediaRecorder(combined)
       
 //         recorder.onstop = e => {
-//           console.log('recorder stopped')
+//           console.log('recorder stopped')video-playback
 //           const completeBlob = new Blob(chunks, { type: chunks[0].type });
 //           hideVideoGrid()
 //           const video = createVideoElement()
@@ -218,9 +218,43 @@ function initStopButton() {
             console.log('stop recording:  type=',type,'  url=',url)
 //             const vid = document.querySelector("video")            
             const vid = createVideoElement()   
-            vid.src = url;
+            vid.src = url /* +'#t=0.1' */    //  #t=0.1 doesn't work on iphones with blob: urls.  But it should make iphones display the first frame
             const container = document.getElementById('video-playback')
+            const uploadDiv = document.createElement('div')
+            uploadDiv.setAttribute('style', 'margin-top:20px;margin-bottom:50px')
+            const urlDiv = document.createElement('div')
+            urlDiv.innerHTML = url
+            const filename = url.substring(url.lastIndexOf('/')) + '.mp4'
+            const uploadLink = document.createElement('button')
+            uploadLink.addEventListener('click', async(evt) => {
+                console.log('LETS UPLOAD:  ', url)
+                const blob = recorder.getBlob()
+                console.log('LETS UPLOAD: blob = ', blob)
+                var fd = new FormData();
+                fd.append('upl', blob, filename);
+
+                let fetchResult = await fetch('/api/test', {method: 'post',body: fd});   
+                let result = await fetchResult.json()
+                          
+                const heading = document.createElement('div')
+                heading.innerHTML = 'Uploaded Video'
+                const uploadedVideoTag = createVideoElement()
+                const sourceTag = document.createElement('source')
+                sourceTag.setAttribute('src', result.url)
+                sourceTag.setAttribute('type', result.videoType)
+                uploadedVideoTag.append(sourceTag)
+                document.getElementById('video-uploaded').append(heading)
+                document.getElementById('video-uploaded').append(uploadedVideoTag)
+                
+              
+            })
+//             uploadLink.style.marginBottom = '20'
+            uploadLink.innerHTML = 'upload !'
+            console.log('upload link: ', uploadLink)
             container.append(vid)
+            uploadDiv.append(urlDiv)
+            uploadDiv.append(uploadLink)
+            container.append(uploadDiv)
         });
     })
 }
